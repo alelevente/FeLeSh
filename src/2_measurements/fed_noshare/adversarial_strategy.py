@@ -22,7 +22,7 @@ import pandas as pd
 
 MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
 MNIST_COMPLETE_PATH = "../../../data/MNIST/train.csv"
-RESULT_PATH = "../../../results/fed_noshare"
+RESULT_PATH = "../../../results/fed_noshare/"
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -78,7 +78,7 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         if torch.cuda.is_available:
             torch.cuda.empty_cache()
         accuracy = correct/total
-        return loss, accuracy
+        return loss/total, accuracy
 
     def aggregate_fit(
         self,

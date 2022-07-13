@@ -3,7 +3,7 @@ import flwr as fl
 import adversarial_strategy
 
 adv_strat = adversarial_strategy.AdversarialStrategy(n_client=10,
-        min_fit_clients=2,
+        min_fit_clients=10,
         min_eval_clients=10,
         min_available_clients=10)
 
