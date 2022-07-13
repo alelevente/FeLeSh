@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 MNIST_MAX_VAL = 255.0
 
-def create_data_loaders(df_path=None, train_batch_size=64, test_batch_size=1000, test_portion=0.2, df=None):
+def create_data_loaders(df_path=None, train_batch_size=1000, test_batch_size=1000, test_portion=0.2, df=None):
     """Creates data loaders for train and test"""
     if df is None:
         df = pd.read_csv(df_path)
