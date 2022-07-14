@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_PARTICIPANTS=3
+NUM_PARTICIPANTS=10
 
 i=0
 while [ $i -lt $NUM_PARTICIPANTS ]; do

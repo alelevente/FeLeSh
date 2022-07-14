@@ -13,7 +13,7 @@ sys.path.append("../..")
 import net
 import tools
 
-DEVICE = "cpu" #torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda:0" if (torch.cuda.is_available() and tools.is_mem_enough()) else "cpu")
 RESULT_PATH = "../../../results/fed_noshare/"
 
 def train(net, train_loader, epochs):

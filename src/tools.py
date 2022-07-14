@@ -4,6 +4,8 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, TensorDataset
 
+from pynvml import *
+
 MNIST_MAX_VAL = 255.0
 
 def create_data_loaders(df_path=None, train_batch_size=1000, test_batch_size=1000, test_portion=0.2, df=None):
@@ -32,3 +34,13 @@ def create_data_loaders(df_path=None, train_batch_size=1000, test_batch_size=100
     val_loader = DataLoader(val_tensor, batch_size=test_batch_size, num_workers=2, shuffle=True)
     
     return train_loader, val_loader
+
+def _get_free_cuda_mem():
+    nvmlInit()
+    h = nvmlDeviceGetHandleByIndex(0)
+    info = nvmlDeviceGetMemoryInfo(h)
+    return info.free
+
+def is_mem_enough():
+    free = _get_free_cuda_mem()
+    return free > 1.0*1024**3 #>1.0 GiB
