@@ -21,7 +21,7 @@ from flwr.common import (
 import pandas as pd
 
 MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
-MNIST_COMPLETE_PATH = "../../../data/MNIST/train.csv"
+MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 RESULT_PATH = "../../../results/fed_noshare/"
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
