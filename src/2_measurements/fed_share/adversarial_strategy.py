@@ -2,6 +2,7 @@ from functools import total_ordering
 from pydoc import cli
 import flwr as fl
 import sys
+import pandas as pd
 
 sys.path.append("../..")
 import net
@@ -22,11 +23,12 @@ import pandas as pd
 
 MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
 MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
-RESULT_PATH = "../../../results/fed_noshare/"
+RESULT_PATH = "../../../results/fed_fixshare/"
+FIXED_SHARING_PATH = "../../..data/participants/fix_shared/shared.csv"
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class AdversarialStrategy(fl.server.strategy.FedAvg):
+class AdversarialStrategyFix(fl.server.strategy.FedAvg):
 
     def __init__(self, n_client, **kwargs):
         super().__init__(**kwargs)
@@ -41,6 +43,15 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         self.digit_data = [tools.create_data_loaders(
             df_path = MNIST_DIGITS_PATH + "digit%d.csv"%i) for i in range(10)]
         _, self.test_data = tools.create_data_loaders(df_path = MNIST_COMPLETE_PATH, test_portion=0.33)
+        self.data_to_share = pd.read_csv(FIXED_SHARING_PATH)
+        self.adversary_save_file = open(RESULT_PATH+"adv_results.csv", "w")
+        self.adversary_save_file.write("name,round,digit,accuracy\n")
+        self.global_save_file = open(RESULT_PATH+"global.csv", "w")
+        self.global_save_file.write("round,accuracy,loss\n")
+        
+    def __del__(self):
+        self.adversary_save_file.close()
+        self.global_save_file.close()
 
     def _infer(self, client_net):
         """Computes per digit accuracies for a client"""
@@ -79,6 +90,29 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
             torch.cuda.empty_cache()
         accuracy = correct/total
         return loss/total, accuracy
+    
+    def configure_fit(
+        self, rnd: int, parameters, client_manager
+    ):
+        """Configure the next round of training."""
+        config = {}
+        if self.on_fit_config_fn is not None:
+            # Custom fit config function provided
+            config = self.on_fit_config_fn(rnd)
+        config["round"] = rnd
+        config["shared_data"] = self.data_to_share
+        fit_ins = FitIns(parameters, config)
+
+        # Sample clients
+        sample_size, min_num_clients = self.num_fit_clients(
+            client_manager.num_available()
+        )
+        clients = client_manager.sample(
+            num_clients=sample_size, min_num_clients=min_num_clients
+        )
+
+        # Return client/config pairs
+        return [(client, fit_ins) for client in clients]
 
     def aggregate_fit(
         self,
@@ -126,36 +160,22 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         print("global\taccuracy:\t", self.global_accuracy)
 
         #saving results for further analysis:
-        adv_result_df = pd.DataFrame() if rnd == 1 else pd.read_csv(RESULT_PATH+"adv_results.csv")
         #client data:
         for i in range(self.used_clients):
             name = self.client_names[i]
             for digit in range(10):
-                adv_result_df = adv_result_df.append({
-                    "name": name,
-                    "round": rnd,
-                    "digit": digit,
-                    "accuracy": self.model_accuracies[i][digit]
-                }, ignore_index=True)
+                self.adversary_save_file.write("%s,%d,%d,%f\n"%(name,
+                                                               rnd,
+                                                               digit,
+                                                               self.model_accuracies[i][digit]))
         #global model:
         for digit in range(10):
-            adv_result_df = adv_result_df.append({
-                "name": "global",
-                "round": rnd,
-                "digit": digit,
-                "accuracy": self.global_accuracy[digit]
-            }, ignore_index=True)
-        adv_result_df.to_csv(RESULT_PATH + "adv_results.csv", index=False)
+            self.adversary_save_file.write("global,%d,%d,%f\n"%(rnd, digit, self.global_accuracy[digit]))
 
         #saving global model results:
         loss, accuracy = self._test_global()
-        glob_result_df = pd.DataFrame() if rnd == 1 else pd.read_csv(RESULT_PATH+"global.csv")
-        glob_result_df = glob_result_df.append({
-            "round": rnd,
-            "accuracy": accuracy,
-            "loss": loss}, ignore_index=True)
-        glob_result_df.to_csv(RESULT_PATH+"global.csv", index=False)
-
+        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss))
+        
         return super().aggregate_fit(rnd, results, failures)
         
     

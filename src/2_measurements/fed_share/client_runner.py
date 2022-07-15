@@ -18,6 +18,6 @@ name = args.name
 path = args.csv_data_file
 cuda = args.cuda
 
-mnist_client = client.MnistClient(name, path, cuda, keep_received_data=args.keep_received)
+mnist_client = client.MnistClientShare(name, path, cuda, keep_received_data=args.keep_received)
 fl.client.start_numpy_client("[::]:9605",client=mnist_client)
 

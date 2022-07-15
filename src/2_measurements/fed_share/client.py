@@ -13,7 +13,7 @@ sys.path.append("../..")
 import net
 import tools
 
-RESULT_PATH = "../../../results/fed_noshare/"
+RESULT_PATH = "../../../results/fed_fixshare/"
 
 def train(net, train_loader, epochs, device):
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=.9)
@@ -45,18 +45,37 @@ def test(net, test_loader, device):
     accuracy = correct / total
     return loss/total, accuracy
 
-class MnistClient(fl.client.NumPyClient):
+class MnistClientShare(fl.client.NumPyClient):
     def __init__(self, name, path, cuda, **kwargs):
         super().__init__()
         self.name = name
         self.data_path = path
-        self.train_set, self.test_set = tools.create_data_loaders(path)
+        self.own_data = pd.read_csv(path)
+        self.train_set, self.test_set = tools.create_data_loaders(df = self.own_data)
         self.device = torch.device("cuda:0" if (torch.cuda.is_available() and cuda) else "cpu")
         self.net = net.Net().to(self.device)
         self.result_file_path = RESULT_PATH+name+".csv"
         self.train_round = 1
         self.test_round = 1     
         self.data = None
+        self.save_file = open(self.results_file_path, "w")
+        self.save_file.write("metric,value,round,epoch\n")
+        
+    def __del__(self):
+        self.save_file.close()
+        
+    def _merge_sample_data(self, shared):
+        """Merges shared data with own data. Returned DataFrame contains evenly sampled data"""
+        merged_data = pd.concat([self.own_data, shared]).reset_index(drop=True)
+        min_label_count = min(merged_data["label"].value_counts())
+        new_dataset = None
+        for digit in range(10):
+            new_dataset = pd.concat([new_dataset, merged_data[merged_data["label"] == digit].sample(n=min_label_count)])
+        size_diff = len(self.own_data) - len(new_dataset)
+        if size_diff > 0:
+            new_dataset = pd.concat([new_dataset, self.own_data.sample(n=size_diff)])
+        return new_dataset
+        
 
     def get_parameters(self):
         return [val.cpu().numpy() for _, val in self.net.state_dict().items()]
@@ -70,42 +89,26 @@ class MnistClient(fl.client.NumPyClient):
         self.set_parameters(parameters)
         
         losses = train(self.net, self.train_set, epochs=1, device=self.device)
-        results = pd.read_csv(self.result_file_path) if self.train_round > 1 else pd.DataFrame()
         round_ = self.train_round
         if "round" in config:
             round_ = config["round"]
+        if "shared_data" in config:
+            combined_data = self._merge_sample_data(config["shared_data"])
+            self.train_set, self.test_set = tools.create_data_loaders(df=combined_data)
         for i, l in enumerate(losses):
-            results = results.append({
-                "metric": "train_loss",
-                "value": l*len(self.test_set)/len(self.train_set),
-                "round": round_,
-                "epoch": i}, ignore_index = True)
-        results.to_csv(self.result_file_path, index=False)
+            self.save_file.write("train_loss,%f,%d,%d\n"%(l*len(self.test_set)/len(self.train_set),
+                                                         round_,
+                                                         i))
         self.train_round += 1
         return self.get_parameters(), len(self.train_set), {"name": self.name}
 
     def evaluate(self, parameters, config):
         self.set_parameters(parameters)
         loss, accuracy = test(self.net, self.test_set, self.device)
-        if not((self.test_round == 1) and (self.train_round == 1)):
-            results = pd.read_csv(self.result_file_path)
-        else:
-            results = pd.DataFrame()
         round_ = self.test_round
         if "round" in config:
             round_ = config["round"]
-        results = results.append({
-            "metric": "test_loss",
-            "value": loss,
-            "round": round_,
-            "epoch": -1
-        }, ignore_index=True)
-        results = results.append({
-            "metric": "test_accuracy",
-            "value": accuracy,
-            "round": round_,
-            "epoch": -1
-        }, ignore_index=True)
-        results.to_csv(self.result_file_path, index=False)
+        self.save_file.write("test_loss,%f,%d,-1\n"%(loss, round_))
+        self.save_file.write("test_accuracy,%f,%d,-1\n"%(accuracy, round_))
         self.test_round += 1
         return float(loss), len(self.test_set), {"accuracy": float(accuracy)}

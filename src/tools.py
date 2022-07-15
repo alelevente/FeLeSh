@@ -43,4 +43,5 @@ def _get_free_cuda_mem():
 
 def is_mem_enough():
     free = _get_free_cuda_mem()
-    return free > 1.0*1024**3 #>1.0 GiB
+    print("free cuda memory:\t%f"%(free/(1024**3)))
+    return free > 1.5*1024**3 #>1.5 GiB
