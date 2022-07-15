@@ -14,6 +14,7 @@ import net
 import tools
 
 RESULT_PATH = "../../../results/fed_fixshare/"
+SHARED_DATA_PATH = "../../../data/participants/fix_shared/shared.csv"
 
 def train(net, train_loader, epochs, device):
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=.9)
@@ -58,7 +59,7 @@ class MnistClientShare(fl.client.NumPyClient):
         self.train_round = 1
         self.test_round = 1     
         self.data = None
-        self.save_file = open(self.results_file_path, "w")
+        self.save_file = open(self.result_file_path, "w")
         self.save_file.write("metric,value,round,epoch\n")
         
     def __del__(self):
@@ -92,9 +93,10 @@ class MnistClientShare(fl.client.NumPyClient):
         round_ = self.train_round
         if "round" in config:
             round_ = config["round"]
-        if "shared_data" in config:
-            combined_data = self._merge_sample_data(config["shared_data"])
-            self.train_set, self.test_set = tools.create_data_loaders(df=combined_data)
+        if "reload" in config:
+            if config["reload"]:
+                combined_data = self._merge_sample_data(pd.read_csv(SHARED_DATA_PATH))
+                self.train_set, self.test_set = tools.create_data_loaders(df=combined_data)
         for i, l in enumerate(losses):
             self.save_file.write("train_loss,%f,%d,%d\n"%(l*len(self.test_set)/len(self.train_set),
                                                          round_,

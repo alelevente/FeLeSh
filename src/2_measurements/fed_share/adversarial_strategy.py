@@ -17,6 +17,7 @@ from flwr.server.strategy.aggregate import aggregate
 from flwr.common import (
     parameters_to_weights,
     weights_to_parameters,
+    FitIns
 )
 
 import pandas as pd
@@ -24,7 +25,6 @@ import pandas as pd
 MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
 MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 RESULT_PATH = "../../../results/fed_fixshare/"
-FIXED_SHARING_PATH = "../../..data/participants/fix_shared/shared.csv"
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -43,7 +43,6 @@ class AdversarialStrategyFix(fl.server.strategy.FedAvg):
         self.digit_data = [tools.create_data_loaders(
             df_path = MNIST_DIGITS_PATH + "digit%d.csv"%i) for i in range(10)]
         _, self.test_data = tools.create_data_loaders(df_path = MNIST_COMPLETE_PATH, test_portion=0.33)
-        self.data_to_share = pd.read_csv(FIXED_SHARING_PATH)
         self.adversary_save_file = open(RESULT_PATH+"adv_results.csv", "w")
         self.adversary_save_file.write("name,round,digit,accuracy\n")
         self.global_save_file = open(RESULT_PATH+"global.csv", "w")
@@ -100,7 +99,8 @@ class AdversarialStrategyFix(fl.server.strategy.FedAvg):
             # Custom fit config function provided
             config = self.on_fit_config_fn(rnd)
         config["round"] = rnd
-        config["shared_data"] = self.data_to_share
+        print("Round:\t%d"%rnd)
+        config["reload"] = (rnd == 1)
         fit_ins = FitIns(parameters, config)
 
         # Sample clients
