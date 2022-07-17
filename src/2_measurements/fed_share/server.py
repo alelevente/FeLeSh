@@ -1,8 +1,11 @@
 import flwr as fl
 
-import adversarial_strategy
+import adversarial_send_strategy
 
-adv_strat = adversarial_strategy.AdversarialStrategyFix(n_client=10,
+RESULT_PATH = "../../../results/fed_fixshare/"
+
+adv_strat = adversarial_send_strategy.AdversarialStrategyFix(n_client=10,
+        result_path = RESULT_PATH,
         min_fit_clients=10,
         min_eval_clients=10,
         min_available_clients=10)

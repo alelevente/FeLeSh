@@ -20,9 +20,8 @@ from flwr.common import (
 
 import pandas as pd
 
-MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
-MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
-RESULT_PATH = "../../../results/fed_noshare/"
+MNIST_DIGITS_PATH = "../../data/MNIST/digits/"
+MNIST_COMPLETE_PATH = "../../data/MNIST/mnist_train.csv"
 
 LOSS_CLIENT_SIZE = 5420*0.2
 
@@ -30,7 +29,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class AdversarialStrategy(fl.server.strategy.FedAvg):
 
-    def __init__(self, n_client, **kwargs):
+    def __init__(self, n_client, result_path, **kwargs):
         super().__init__(**kwargs)
         #creating the representation of the clients =: "shadow clients":
         self.clients = []     
@@ -39,10 +38,19 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         self.client_map = {}
         self.client_names = []
         self.used_clients = 0
-
+        #for adversarial strategy:
         self.digit_data = [tools.create_data_loaders(
             df_path = MNIST_DIGITS_PATH + "digit%d.csv"%i) for i in range(10)]
         _, self.test_data = tools.create_data_loaders(df_path = MNIST_COMPLETE_PATH, test_portion=0.33)
+        #save results to files:
+        self.adversary_save_file = open(result_path+"adv_results.csv", "w")
+        self.adversary_save_file.write("name,round,digit,accuracy\n")
+        self.global_save_file = open(result_path+"global.csv", "w")
+        self.global_save_file.write("round,accuracy,loss\n")
+        
+    def __del__(self):
+        self.adversary_save_file.close()
+        self.global_save_file.close()
 
     def _infer(self, client_net):
         """Computes per digit accuracies for a client"""
@@ -123,41 +131,23 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
             self.client_net.load_state_dict(self.clients[x], strict=True)
             self.model_accuracies.append(self._infer(client_net=self.client_net))
         self.global_accuracy = self._infer(self.global_model)
-        for i in range(self.used_clients):
-            print(self.client_names[i] + "\taccuracy:\t", self.model_accuracies[i])
-        print("global\taccuracy:\t", self.global_accuracy)
-
         #saving results for further analysis:
-        adv_result_df = pd.DataFrame() if rnd == 1 else pd.read_csv(RESULT_PATH+"adv_results.csv")
         #client data:
         for i in range(self.used_clients):
             name = self.client_names[i]
             for digit in range(10):
-                adv_result_df = adv_result_df.append({
-                    "name": name,
-                    "round": rnd,
-                    "digit": digit,
-                    "accuracy": self.model_accuracies[i][digit]
-                }, ignore_index=True)
+                self.adversary_save_file.write("%s,%d,%d,%f\n"%(name,
+                                                               rnd,
+                                                               digit,
+                                                               self.model_accuracies[i][digit]))
         #global model:
         for digit in range(10):
-            adv_result_df = adv_result_df.append({
-                "name": "global",
-                "round": rnd,
-                "digit": digit,
-                "accuracy": self.global_accuracy[digit]
-            }, ignore_index=True)
-        adv_result_df.to_csv(RESULT_PATH + "adv_results.csv", index=False)
+            self.adversary_save_file.write("global,%d,%d,%f\n"%(rnd, digit, self.global_accuracy[digit]))
 
         #saving global model results:
         loss, accuracy = self._test_global()
-        glob_result_df = pd.DataFrame() if rnd == 1 else pd.read_csv(RESULT_PATH+"global.csv")
-        glob_result_df = glob_result_df.append({
-            "round": rnd,
-            "accuracy": accuracy,
-            "loss": loss}, ignore_index=True)
-        glob_result_df.to_csv(RESULT_PATH+"global.csv", index=False)
-
+        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss))
+        
         return super().aggregate_fit(rnd, results, failures)
         
     
