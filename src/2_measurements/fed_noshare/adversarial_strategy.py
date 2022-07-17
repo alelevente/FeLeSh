@@ -24,6 +24,8 @@ MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
 MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 RESULT_PATH = "../../../results/fed_noshare/"
 
+LOSS_CLIENT_SIZE = 5420*0.2
+
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class AdversarialStrategy(fl.server.strategy.FedAvg):
@@ -78,7 +80,7 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         if torch.cuda.is_available:
             torch.cuda.empty_cache()
         accuracy = correct/total
-        return loss/total, accuracy
+        return loss*LOSS_CLIENT_SIZE/len(self.test_data), accuracy
 
     def aggregate_fit(
         self,

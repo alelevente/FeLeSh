@@ -28,7 +28,7 @@ def train(net, train_loader, epochs, device):
             total += labels.size(0)
             loss.backward()
             optimizer.step()
-        losses.append(l_/total)
+        losses.append(l_)
     return losses
 
 def test(net, test_loader, device):
@@ -43,7 +43,7 @@ def test(net, test_loader, device):
             correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
-    return loss/total, accuracy
+    return loss, accuracy
 
 class MnistClient(fl.client.NumPyClient):
     def __init__(self, name, path, cuda, **kwargs):
