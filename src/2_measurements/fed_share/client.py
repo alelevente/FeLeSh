@@ -17,7 +17,7 @@ RESULT_PATH = "../../../results/fed_fixshare/"
 SHARED_DATA_PATH = "../../../data/participants/fix_shared/shared.csv"
 
 def train(net, train_loader, epochs, device):
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=.9)
     losses = []
     for _ in range(epochs):
         l_, total = 0, 0
@@ -29,7 +29,7 @@ def train(net, train_loader, epochs, device):
             total += labels.size(0)
             loss.backward()
             optimizer.step()
-        losses.append(l_/total)
+        losses.append(l_)
     return losses
 
 def test(net, test_loader, device):
@@ -44,7 +44,7 @@ def test(net, test_loader, device):
             correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
-    return loss/total, accuracy
+    return loss, accuracy
 
 class MnistClientShare(fl.client.NumPyClient):
     def __init__(self, name, path, cuda, **kwargs):

@@ -23,7 +23,7 @@ import pandas as pd
 MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
 MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 
-LOSS_CLIENT_SIZE = 5420*0.2
+LOSS_CLIENT_SIZE = 5420*0.2/1000
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -144,8 +144,7 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
 
         #saving global model results:
         loss, accuracy = self._test_global()
-        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss
-        *LOSS_CLIENT_SIZE/len(self.test_data)))
+        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss))
         
         return super().aggregate_fit(rnd, results, failures)
         

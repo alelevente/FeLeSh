@@ -30,8 +30,8 @@ def create_data_loaders(df_path=None, train_batch_size=1000, test_batch_size=100
     val_labels_tensor = torch.tensor(val_labels)
     val_tensor = TensorDataset(val_images_tensor, val_labels_tensor)
 
-    train_loader = DataLoader(train_tensor, batch_size=train_batch_size, num_workers=2, shuffle=True)
-    val_loader = DataLoader(val_tensor, batch_size=test_batch_size, num_workers=2, shuffle=True)
+    train_loader = DataLoader(train_tensor, batch_size=train_batch_size, num_workers=8, shuffle=True)
+    val_loader = DataLoader(val_tensor, batch_size=test_batch_size, num_workers=8, shuffle=True)
     
     return train_loader, val_loader
 

@@ -16,7 +16,7 @@ import tools
 RESULT_PATH = "../../../results/fed_noshare/"
 
 def train(net, train_loader, epochs, device):
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001, momentum=.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=.9)
     losses = []
     for _ in range(epochs):
         l_, total = 0, 0
