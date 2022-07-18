@@ -5,7 +5,7 @@ sys.path.append("..")
 
 import adversarial_strategy
 
-RESULT_PATH = "../../results/fed_noshare/"
+RESULT_PATH = "../../../results/fed_noshare/"
 
 adv_strat = adversarial_strategy.AdversarialStrategy(n_client=10,
         result_path = RESULT_PATH,

@@ -20,8 +20,8 @@ from flwr.common import (
 
 import pandas as pd
 
-MNIST_DIGITS_PATH = "../../data/MNIST/digits/"
-MNIST_COMPLETE_PATH = "../../data/MNIST/mnist_train.csv"
+MNIST_DIGITS_PATH = "../../../data/MNIST/digits/"
+MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 
 LOSS_CLIENT_SIZE = 5420*0.2
 
@@ -35,6 +35,8 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         self.clients = []     
         self.global_model = net.Net().to(DEVICE)
         self.client_net = net.Net().to(DEVICE)
+        self.client_net.eval()
+        self.global_model.eval()
         self.client_map = {}
         self.client_names = []
         self.used_clients = 0
@@ -69,8 +71,6 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
                     correct += (predicted == labels).sum().item()
                 accuracies.append(correct/total)
 
-        if torch.cuda.is_available:
-            torch.cuda.empty_cache()
         return accuracies
 
     def _test_global(self):
@@ -85,8 +85,6 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
 
-        if torch.cuda.is_available:
-            torch.cuda.empty_cache()
         accuracy = correct/total
         return loss*LOSS_CLIENT_SIZE/len(self.test_data), accuracy
 
