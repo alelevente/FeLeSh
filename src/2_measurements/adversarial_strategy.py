@@ -144,7 +144,8 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
 
         #saving global model results:
         loss, accuracy = self._test_global()
-        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss))
+        self.global_save_file.write("%d,%f,%f\n"%(rnd, accuracy, loss
+        *LOSS_CLIENT_SIZE/len(self.test_data)))
         
         return super().aggregate_fit(rnd, results, failures)
         
