@@ -47,13 +47,13 @@ def test(net, test_loader, device):
     return loss, accuracy
 
 class MnistClientShare(fl.client.NumPyClient):
-    def __init__(self, name, path, cuda, **kwargs):
+    def __init__(self, name, path, device, **kwargs):
         super().__init__()
         self.name = name
         self.data_path = path
         self.own_data = pd.read_csv(path)
         self.train_set, self.test_set = tools.create_data_loaders(df = self.own_data)
-        self.device = torch.device("cuda:0" if (torch.cuda.is_available() and cuda) else "cpu")
+        self.device = device
         self.net = net.Net().to(self.device)
         self.result_file_path = RESULT_PATH+name+".csv"
         self.train_round = 1
