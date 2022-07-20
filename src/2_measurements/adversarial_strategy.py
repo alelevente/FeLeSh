@@ -26,6 +26,7 @@ MNIST_COMPLETE_PATH = "../../../data/MNIST/mnist_train.csv"
 LOSS_CLIENT_SIZE = 5420*0.2/1000
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#torch.cuda.empty_cache()
 
 class AdversarialStrategy(fl.server.strategy.FedAvg):
 
@@ -37,6 +38,7 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
         self.client_net = net.Net().to(DEVICE)
         self.client_net.eval()
         self.global_model.eval()
+        #torch.cuda.empty_cache()
         self.client_map = {}
         self.client_names = []
         self.used_clients = 0
@@ -86,6 +88,7 @@ class AdversarialStrategy(fl.server.strategy.FedAvg):
                 correct += (predicted == labels).sum().item()
 
         accuracy = correct/total
+        #torch.cuda.empty_cache()
         return loss*LOSS_CLIENT_SIZE/len(self.test_data), accuracy
 
     def aggregate_fit(

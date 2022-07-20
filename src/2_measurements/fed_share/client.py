@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from http import client
 import pandas as pd
+import time
 
 import torch
 import torch.nn.functional as F
@@ -16,7 +17,12 @@ import tools
 RESULT_PATH = "../../../results/fed_fixshare/"
 SHARED_DATA_PATH = "../../../data/participants/fix_shared/shared.csv"
 
+def wait_for_cuda():
+    while not(tools.is_mem_enough()):
+        time.sleep(0.1)
+
 def train(net, train_loader, epochs, device):
+    #wait_for_cuda()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.01, momentum=.9)
     losses = []
     for _ in range(epochs):
@@ -30,9 +36,13 @@ def train(net, train_loader, epochs, device):
             loss.backward()
             optimizer.step()
         losses.append(l_)
+    #del labels
+    #del images
+    #torch.cuda.empty_cache()
     return losses
 
 def test(net, test_loader, device):
+    #wait_for_cuda()
     correct, total, loss = 0, 0, 0.0
     with torch.no_grad():
         for data in test_loader:
@@ -44,16 +54,18 @@ def test(net, test_loader, device):
             correct += (predicted == labels).sum().item()
 
     accuracy = correct / total
+    #torch.cuda.empty_cache()
     return loss, accuracy
 
 class MnistClientShare(fl.client.NumPyClient):
-    def __init__(self, name, path, device, **kwargs):
+    def __init__(self, name, path, cuda, **kwargs):
         super().__init__()
         self.name = name
         self.data_path = path
         self.own_data = pd.read_csv(path)
         self.train_set, self.test_set = tools.create_data_loaders(df = self.own_data)
-        self.device = device
+        self.device = torch.device("cuda:0" if cuda and torch.cuda.is_available() else "cpu")
+        #torch.cuda.empty_cache()
         self.net = net.Net().to(self.device)
         self.result_file_path = RESULT_PATH+name+".csv"
         self.train_round = 1

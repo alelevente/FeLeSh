@@ -30,8 +30,8 @@ def create_data_loaders(df_path=None, train_batch_size=1000, test_batch_size=100
     val_labels_tensor = torch.tensor(val_labels)
     val_tensor = TensorDataset(val_images_tensor, val_labels_tensor)
 
-    train_loader = DataLoader(train_tensor, batch_size=train_batch_size, num_workers=8, shuffle=True)
-    val_loader = DataLoader(val_tensor, batch_size=test_batch_size, num_workers=8, shuffle=True)
+    train_loader = DataLoader(train_tensor, batch_size=train_batch_size, shuffle=True)
+    val_loader = DataLoader(val_tensor, batch_size=test_batch_size, shuffle=True)
     
     return train_loader, val_loader
 
@@ -43,5 +43,4 @@ def _get_free_cuda_mem():
 
 def is_mem_enough():
     free = _get_free_cuda_mem()
-    print("free cuda memory:\t%f"%(free/(1024**3)))
-    return free > 1.5*1024**3 #>1.5 GiB
+    return (not(torch.cuda.is_available())) or (free > 2.0*1024**3) #>2.0 GiB
