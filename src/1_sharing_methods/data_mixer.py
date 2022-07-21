@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import gc
+
 class DataMixer:
     def __init__(self, non_iid_path):
         '''
@@ -9,9 +11,10 @@ class DataMixer:
             Parameters:
                 -non_iid_path: path to noniid_50 participants' data
         '''
-        self.participants_data = []
+        self.participants = []
         for partip in range(10):
-            self.participants_data.append(pd.read_csv(non_iid_path+"participant%d.csv"%partip))
+            self.participants.append(pd.read_csv(non_iid_path+"participant%d.csv"%partip))
+            
 
     def create_new_shared_data(self, samples_to_share):
         '''
@@ -23,7 +26,7 @@ class DataMixer:
         '''
         shared_df = None
         for partip in range(10):
-            participant_df = self.participants_data[partip]
+            participant_df = self.participants[partip]
             for digit in range(10):
                 digit_df = participant_df[participant_df["label"] == digit].sample(n=samples_to_share).reset_index(drop=True)
                 shared_df = pd.concat([shared_df, digit_df])

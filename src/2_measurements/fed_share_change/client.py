@@ -100,7 +100,7 @@ class MnistClientShare(fl.client.NumPyClient):
     def fit(self, parameters, config):
         self.set_parameters(parameters)
         if "reload" in config:
-            received_data = pd.read_json(config["reload"])
+            received_data = pd.read_csv(config["reload"])
             combined_data = self._merge_sample_data(received_data)
             print("received:", len(received_data), "combined: ", len(combined_data))
             self.train_set, self.test_set = tools.create_data_loaders(df=combined_data)

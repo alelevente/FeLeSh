@@ -7,24 +7,15 @@ import pandas as pd
 sys.path.append("..")
 from adversarial_strategy import AdversarialStrategy
 
-sys.path.append("../../1_sharing_methods")
-from data_mixer import DataMixer
-
-
 from collections import OrderedDict
 
 from flwr.common import (
     FitIns
 )
 
-NON_IID50_PATH = "../../../data/participants/non_iid50/" # input
-SAMPLES_TO_SHARE = 27 #num. samples/digit/clients
+SHARED_FILES = "../../../data/participants/change_shared/" #input path
 
 class AdversarialStrategyChange(AdversarialStrategy):
-    
-    def __init__(self, n_client, result_path, **kwargs):
-        super().__init__(n_client, result_path, **kwargs)
-        self.data_mixer = DataMixer(NON_IID50_PATH)
     
     def configure_fit(
         self, rnd: int, parameters, client_manager
@@ -36,7 +27,7 @@ class AdversarialStrategyChange(AdversarialStrategy):
             config = self.on_fit_config_fn(rnd)
         config["round"] = rnd
         print("Round:\t%d"%rnd)
-        config["reload"] = self.data_mixer.create_new_shared_data(SAMPLES_TO_SHARE).to_json()
+        config["reload"] = SHARED_FILES+"round%d.csv"%rnd
         fit_ins = FitIns(parameters, config)
 
         # Sample clients
