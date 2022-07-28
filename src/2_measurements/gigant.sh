@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_ROUNDS=5
+NUM_ROUNDS=10
 
 #fed_iid:
 i=0
